@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rooms for rent</title>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=aspect-ratio,line-clamp"></script>
+</head>
+<body>
+    <div class="container mx-auto py-5 px-4">
+    <div x-data="data">
+        <template x-if="loading">
+            <div class="fixed top-0 left-0 h-screen w-screen flex items-center justify-center backdrop-blur	">
+                <div class="inline-flex items-center p-5 cursor-not-allowed">
+                    <svg class="animate-spin h-40 w-40 text-blue-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+            </div>
+        </template>
+        <div class="grid sm:grid-cols-2 gap-5">
+            <template x-for="item in data">
+                <div class="data-card bg-gray-50 p-4 border rounded sm:flex">
+                    <div class="aspect-square flex-shrink-0 mb-4 sm:mb-0">
+                        <img x-bind:src="item.imageUrl" class="w-full h-auto sm:w-40 sm:h-32 rounded">
+                    </div>
+                    <div class="sm:ml-4">
+                        <div class="flex text-sm items-center opacity-80">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <div x-text="item.createdTime" class=""></div>
+                            <div class="mx-2">|</div>
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 8h6m-5 0a3 3 0 110 6H9l3 3m-3-6h6m6 1a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <div x-text="`${item.price.toLocaleString()}`" class=""></div>
+                        </div>
+                        <a href="#">
+                            <h4 x-text="item.name" class="text-lg font-semibold mt-1"></h4>
+                        </a>
+                        <div class="text-sm my-1">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            <span x-text="item.location.locationDescription"></span>
+                        </div>
+                        <p x-text="item.description" class="text-sm line-clamp-2 opacity-80"></p>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+</div>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('data', () => ({
+                data: [],
+                loading: false,
+                lastEntryId: null,
+
+                init() {
+                    console.log('initialized');
+                    this.askForNotification();
+                    this.fetchData();
+                    var url_string = window.location.href; // www.test.com?filename=test
+                    var url = new URL(url_string);
+                    var interval= url.searchParams.get("interval") || 5000;
+                    console.log(interval);
+                    setInterval(() => {
+                        this.fetchData();
+                    }, interval);
+                },
+
+                fetchData() {
+                    this.loading = true;
+                    fetch('data.php')
+                    .then((response) => response.json())
+                    .then(data => {
+                        this.data = data.data
+                        this.loading = false;
+                        let lastEntry = data.data[data.data.length - 1];
+                        let lastEntryId = lastEntry.id || null;
+                        if(this.lastEntryId != lastEntryId) 
+                        {
+                            this.lastEntryId = lastEntryId;
+                            this.dispatchRoomNotification(lastEntry);
+                        }
+                    });
+                },
+                
+                dispatchRoomNotification(room) {
+                    this.notify(room.name + ' 💰 ' + room.price.toLocaleString(), room.description, room.imageUrl);
+                },
+
+                askForNotification() {
+                    if (!"Notification" in window) {
+                        console.error("This browser does not support desktop notification");
+                        return;
+                    }
+                    if (Notification.permission === "granted") {
+                        console.log('Notification is ON');
+                        return;
+                    }
+                    Notification.requestPermission().then((permission) => console.log(`Notification permission ${permission} by user`));
+                },
+
+                notify(title, body, icon = null) {
+                    if (!Notification.permission === "granted") return;
+                    const notification = new Notification(title, {
+                        body,
+                        icon,
+                    });
+                }
+            }));
+        })
+
+    </script>
+
+</body>
+</html>
